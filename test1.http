@@ -1,0 +1,12 @@
+# -*- restclient -*-
+
+# testing default handler
+# Front end API
+GET http://localhost:42069/api/v1/parking-lot/macewan/a123
+
+# Back end grab everything route
+GET http://localhost:42069/api/v1/parking-lot/madison-garden
+
+
+# testing update route for hardware
+PUT http://localhost:42069/api/v1/stall-status/macewan/f123
