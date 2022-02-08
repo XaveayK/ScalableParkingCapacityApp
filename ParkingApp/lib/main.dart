@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Parking App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -33,18 +33,29 @@ This is a private class
 */
 class _MapScreenState extends State<MapScreen> {
   //initCameraPosition: sets the initial target and zoom
-  //
+  //GoogleMapController: controller for a single GoogleMap instance which is
+  //running on the host platform; can use methods such as animateCamera
   static const _initialCameraPosition = CameraPosition(
     target: LatLng(53.5461, -113.4938),
     zoom: 11.5,
   );
 
   late GoogleMapController _googleMapController;
+  Set<Marker> _markers = {};
 
-  @override
-  void dispose() {
-    _googleMapController.dispose();
-    super.dispose();
+  void _onMapCreated(GoogleMapController controller) {
+    setState(() {
+      _markers.add(
+        Marker(
+          markerId: MarkerId('id-1'),
+          position: LatLng(53.5225, -113.6242),
+          infoWindow: InfoWindow(
+            title: 'West Edmonton Mall',
+            snippet: 'A Mall',
+          ),
+        ),
+      );
+    });
   }
 
   @override
@@ -54,17 +65,8 @@ class _MapScreenState extends State<MapScreen> {
         myLocationButtonEnabled: false,
         zoomControlsEnabled: false,
         initialCameraPosition: _initialCameraPosition,
-        onMapCreated: (controller) => _googleMapController = controller,
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.black,
-        onPressed: () => _googleMapController.animateCamera(
-          CameraUpdate.newCameraPosition(_initialCameraPosition),
-        ),
-        //this Icon is a visual aid which is responsible for animating the screen
-        //to the default lat-long coordinate (Edmonton)
-        child: const Icon(Icons.center_focus_strong),
+        onMapCreated: _onMapCreated,
+        markers: _markers,
       ),
     );
   }
