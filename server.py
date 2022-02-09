@@ -10,15 +10,47 @@ from credentials import driver, server, password as pw, database as db, username
 
 app = flask.Flask(__name__)
 
+conn_str = (
+    r'DRIVER=%s;'
+    r'server=tcp:%s;'
+    r'PORT=1433;'
+    r'DATABASE=%s;'
+    r'UID=%s;'
+    r'PWD=%s'
+)
+
+def queryDataBase(query):
+    with pyodbc.connect(conn_str) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(query)
+            data = cursor.fetchall()
+    return data
+
+
 #Gets the information for a single lot
 @app.route("/api/v1/parking-lot/<string:placeName>/<string:lotID>", methods=['GET'])
 def getLotInfo(placeName, lotID):
-    return placeName, lotID
+    data = queryDataBase(
+        'SELECT HardWareID, isAvailable ' +
+        'FROM Stall ' + 
+        'WHERE ParkingLotID=%s;' % (lotID)
+    )
+    print(placeName, lotID)
+    return data
 
 #Gets the information for a landmark, so the lots connected to it
 @app.route("/api/v1/parking-lot/<string:placeName>", methods=['GET'])
 def getPlaceInfo(placeName):
-    return placeName
+    data = queryDataBase(
+        'SELECT ParkingLot.LotName ' +
+        'FROM ParkingLot ' +
+        'JOIN Destination ' +
+        'ON ParkingLot.ParkingLotID = Destination.ParkingLotID ' +
+        'JOIN Landmark ' +
+        'ON Destination.LandMarkID = Landmark.LandmarkID ' + 
+        'WHERE Landmark.LandmarkName=%s;' % (placeName)
+    )
+    return data
 
 #Gets the information for individual stalls
 @app.route("/api/v1/stall-status/<string:placeName>/<string:stallID>", methods=['PUT'])
@@ -46,6 +78,6 @@ def remParkingLot(placeName, lotID):
     return placeName, lotID
 
 if __name__ == "__main__":
+    conn_str=(conn_str % (driver, server, db, un, pw))
+    print(conn_str)
     app.run(host="0.0.0.0", port=6969)
-
-
