@@ -20,18 +20,18 @@ Packages:
 - Flask : Required package for python, in order to host our Web Server API
 - pyodbc : Connects our API to our Microsoft Azure SQL Database
 
-## Getting Started
+# Getting Started
 
-# Python Version
+## Python Version
 
 Our ScalableParkingCapacityApp depends on packages that was written for Python 3 and will not correctly work on Python 2
 
 
-## API Routes
+# API Routes
 
 Our API follows REST-ful guidelines
 
-# GET Route
+## GET Route
 
 >URI/api/v1/parking-lot/{place-name}/{lot-ID}
 
