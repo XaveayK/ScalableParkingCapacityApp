@@ -19,48 +19,68 @@ conn_str = (
     r'PWD=%s'
 )
 
-def queryDataBase(query):
+#Query the database with a premade query
+#Params: query - the query to execute
+#        bool  - If the query is select/(add or remove)
+def queryDataBase(query, bool):
     with pyodbc.connect(conn_str) as conn:
         with conn.cursor() as cursor:
             cursor.execute(query)
-            data = cursor.fetchall()
+            if bool:
+                data = cursor.fetchall()
     return data
 
-
-#Gets the information for a single lot
-@app.route("/api/v1/parking-lot/<string:placeName>/<string:lotID>", methods=['GET'])
-def getLotInfo(placeName, lotID):
+#Gets stall information for a single lot
+@app.route("/api/v1/parking-lot/<string:lotID>", methods=['GET'])
+def getLotInfo(lotID):
     data = queryDataBase(
         'SELECT HardWareID, isAvailable ' +
         'FROM Stall ' + 
-        'WHERE ParkingLotID=%s;' % (lotID)
+        'WHERE ParkingLotID=%s;' % (lotID), 1
     )
-    print(placeName, lotID)
     return data
 
-#Gets the information for a landmark, so the lots connected to it
+#Gets the information for a landmark, all lots connected to it
 @app.route("/api/v1/parking-lot/<string:placeName>", methods=['GET'])
 def getPlaceInfo(placeName):
     data = queryDataBase(
-        'SELECT ParkingLot.LotName ' +
+        'SELECT ParkingLot.LotName, ParkingLot.ParkingLotID ' +
         'FROM ParkingLot ' +
         'JOIN Destination ' +
         'ON ParkingLot.ParkingLotID = Destination.ParkingLotID ' +
         'JOIN Landmark ' +
         'ON Destination.LandMarkID = Landmark.LandmarkID ' + 
-        'WHERE Landmark.LandmarkName=%s;' % (placeName)
+        'WHERE Landmark.LandmarkName=%s;' % (placeName), 1
     )
     return data
 
 #Gets the information for individual stalls
-@app.route("/api/v1/stall-status/<string:placeName>/<string:stallID>", methods=['PUT'])
-def getStallInfo(placeName, stallID):
-    return placeName, stallID
+@app.route("/api/v1/stall-status/<string:lotID>/<string:hardWareID>", methods=['GET'])
+def getStallInfo(lotID, hardWareID):
+    data = queryDataBase(
+        'SELECT HardWareID, isAvailable ' +
+        'FROM Stall ' +
+        'WHERE ParkingLotID=%s and HardWareID=%s;' % (lotID, hardWareID), 1
+    )
+    return data
 
 #Adds a parking lot
-@app.route("/api/v1/newLot/<string:placeName>/<string:lotID>/<int:stallAmount>", methods=['POST'])
+@app.route("/api/v1/newLot/<string:placeName>/<string:lotID>", methods=['POST'])
 def newParkingLot(placeName, lotID, stallAmount):
+    if placeName.lower() != 'null':
+        queryDataBase(
+            'INSERT INTO '
+        )
     return placeName, lotID, stallAmount
+
+#Add a parking stall
+@app.route("/api/v1/newStall/<string:lotID>", methods=["POSt"])
+def newStall(lotID):
+    data = queryDataBase(
+        'INSERT INTO Stall (isAvailable, ParkingLotID) ' +
+        'VALUES (0, %s);' % lotID, 0
+    )
+    return lotID
 
 #Adds a new landmark
 @app.route("/api/v1/newLandMark/<string:placeName>", methods=['POST'])
