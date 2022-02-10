@@ -16,6 +16,12 @@ Installing pyodbc Package
 >pip install pyodbc
 
 
+Installing ODBC package
+
+
+https://www.microsoft.com/en-us/download/details.aspx?id=50420 Is the source location. Must be 13. Once installed, will run on native linux or native windows.
+
+
 Packages:
 - Flask : Required package for python, in order to host our Web Server API
 - pyodbc : Connects our API to our Microsoft Azure SQL Database
