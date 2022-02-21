@@ -1,5 +1,11 @@
+// ignore_for_file: empty_constructor_bodies
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import 'models/map_marker.dart';
 
 void main() {
   runApp(const MyApp());
@@ -40,32 +46,63 @@ class _MapScreenState extends State<MapScreen> {
     zoom: 11.5,
   );
 
+  //main controller for google map
   late GoogleMapController _googleMapController;
   Set<Marker> _markers = {};
 
+  //
   void _onMapCreated(GoogleMapController controller) {
+    //this method allows initializing the markers that will be presented
+    //to the Google Map Widget
     setState(() {
-      _markers.add(
-        Marker(
-          markerId: MarkerId('id-1'),
-          position: LatLng(53.5225, -113.6242),
-          infoWindow: InfoWindow(
-            title: 'West Edmonton Mall',
-            snippet: 'A Mall',
-          ),
-        ),
-      );
+      List<Marker> markerTemp = toMarker(mapMarkers);
+      _markers = markerTemp.toSet();
     });
+  }
+
+  /*
+  This method fetches the json file from the assets/map_styles directory;
+  
+  */
+  changeMapStyle() {
+    getJsonFile("assets/map_styles/night.json").then(setMapStyle);
+  }
+
+  Future<String> getJsonFile(String path) async {
+    return await rootBundle.loadString(path);
+  }
+
+  void setMapStyle(String mapStyle) {
+    _googleMapController.setMapStyle(mapStyle);
+  }
+
+  List<Marker> toMarker(List<MapMarker> mapMarkerList) {
+    List<Marker> markerList = [];
+    for (var i = 0; i < mapMarkerList.length; i++) {
+      markerList.add(Marker(
+        markerId: MarkerId(mapMarkerList[i].title),
+        position: mapMarkerList[i].location,
+      ));
+    }
+    return markerList;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: new AppBar(
+        title: new Text("Parking App"),
+        backgroundColor: Colors.purple[900],
+      ),
       body: GoogleMap(
         myLocationButtonEnabled: false,
         zoomControlsEnabled: false,
         initialCameraPosition: _initialCameraPosition,
-        onMapCreated: _onMapCreated,
+        onMapCreated: (GoogleMapController controller) {
+          _googleMapController = controller;
+          _onMapCreated(controller);
+          changeMapStyle();
+        },
         markers: _markers,
       ),
     );
