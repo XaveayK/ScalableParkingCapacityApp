@@ -78,25 +78,51 @@ def newParkingLotWithLandmark(placeName, lotName):
 #Adds a new landmark, with the landmark name being the placeName obtained from URI, and request being parsed from JSON 
 @app.route("/api/v1/newLandMark/<string:placeName>", methods=['POST'])
 def newLandMark(placeName):
-    requestData = request.json                                     # we check if json body data came with the API request: e.g. { "address:" "104th street"}
-    if requestData is not None:                                    # if it did, submit it to stored procedure
-        address = requestData["address"]
-        storedProcedure = "Exec [dbo].[AddLandmark] @landmarkName = ?, @address = ?"
-        params = (placeName, address)
-        cursor.execute(storedProcedure, params)
-        cursor.commit()
-    else:
-        storedProcedure = "Exec [dbo].[AddLandmark] @landmarkName = ?"
-        params = (placeName)
-        cursor.execute(storedProcedure, params)
-        cursor.commit()  
-    return flask.Response(status=200)  
+
+    existProcedure = "Exec [dbo].[landmarkExists] @landmarkName = ?"
+    count = cursor.execute(existProcedure)
+    cursor.commit()
+    if count > 0:
+        return "Landmark already exists", 400
+
+    try:
+        requestData = request.json                                     # we check if json body data came with the API request: e.g. { "address:" "104th street"}
+        if requestData is not None:                                    # if it did, submit it to stored procedure
+            address = requestData["address"]
+            storedProcedure = "Exec [dbo].[AddLandmark] @landmarkName = ?, @address = ?"
+            params = (placeName, address)
+            cursor.execute(storedProcedure, params)
+            cursor.commit()
+        else:
+            storedProcedure = "Exec [dbo].[AddLandmark] @landmarkName = ?"
+            params = (placeName)
+            cursor.execute(storedProcedure, params)
+            cursor.commit()  
+        return flask.Response(status=200)  
+    except:
+        return "Error encountered while attempting to access Database", 500
     
 
-#Removes a landmark
+#Removes a landmark. Does NOT remove the associated parking lot, since a parking lot can exist without a landmark (unmarked parking lots)
 @app.route("/api/v1/removeLandMark/<string:placeName>", methods=['DELETE'])
 def remLandMark(placeName):
-    return placeName
+
+    #check if landmark exists before attempting to delete
+    existProcedure = "Exec [dbo].[landmarkExists] @landmarkName = ?"
+    count = cursor.execute(existProcedure, placeName).rowcount()
+    cursor.commit()  # not sure about this commit
+    if count <= 0:
+        return "Landmark does not exist", 400
+    
+    # if it exists, attempt to delete from database
+    try:
+        storedProcedure = "Exec [dbo].[RemoveLandmark] @landmark = ?"
+        params = (placeName)
+        cursor.execute(storedProcedure, params)
+        cursor.commit()
+        return flask.Response(status=200)
+    except:
+        return "Error encountered while attempting to Delete record from database", 500
 
 #Removes a parking lot and its stalls
 @app.route("/api/v1/removeParkingLot/<string:lotID>")
