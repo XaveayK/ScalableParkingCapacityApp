@@ -119,8 +119,10 @@ def newParkingLotWithLandmark(placeName, lotName):
 def newLandMark(placeName):
 
     existProcedure = "Exec [dbo].[landmarkExists] @landmarkName = ?"
-    count = cursor.execute(existProcedure)
+    cursor.execute(existProcedure, placeName)
+    count = cursor.fetchone()[0]
     cursor.commit()
+    print(count)
     if count > 0:
         return "Landmark already exists", 400
 
@@ -148,11 +150,12 @@ def remLandMark(placeName):
 
     #check if landmark exists before attempting to delete
     existProcedure = "Exec [dbo].[landmarkExists] @landmarkName = ?"
-    count = cursor.execute(existProcedure, placeName).rowcount()
+    cursor.execute(existProcedure, placeName).rowcount
+    count = cursor.fetchone()[0]
     cursor.commit()  # not sure about this commit
     if count <= 0:
         return "Landmark does not exist", 400
-    
+
     # if it exists, attempt to delete from database
     try:
         storedProcedure = "Exec [dbo].[RemoveLandmark] @landmark = ?"
