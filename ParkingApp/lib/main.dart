@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Parking App',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        fontFamily: "UniSans",
       ),
       home: MapScreen(),
     );
@@ -61,8 +61,9 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   /*
-  This method fetches the json file from the assets/map_styles directory;
-  
+  This method fetches the json file from the assets/map_styles directory and then uses
+  the setMapStyle to set the map style
+
   */
   changeMapStyle() {
     getJsonFile("assets/map_styles/night.json").then(setMapStyle);
@@ -90,21 +91,72 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: new AppBar(
-        title: new Text("Parking App"),
-        backgroundColor: Colors.purple[900],
-      ),
-      body: GoogleMap(
-        myLocationButtonEnabled: false,
-        zoomControlsEnabled: false,
-        initialCameraPosition: _initialCameraPosition,
-        onMapCreated: (GoogleMapController controller) {
-          _googleMapController = controller;
-          _onMapCreated(controller);
-          changeMapStyle();
-        },
-        markers: _markers,
-      ),
-    );
+        appBar: new AppBar(
+          title: new Text("Parking App"),
+          backgroundColor: Colors.grey[900],
+        ),
+        /*
+        create a stack of widgets (one for GoogleMap and the other which
+        holds a Container Widget that shows the landmark info and the number of
+        cars parked.)
+        Each widget has a parent widget called: 
+          Positioned
+
+        */
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: GoogleMap(
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                initialCameraPosition: _initialCameraPosition,
+                onMapCreated: (GoogleMapController controller) {
+                  _googleMapController = controller;
+                  _onMapCreated(controller);
+                  changeMapStyle();
+                },
+                markers: _markers,
+              ),
+            ),
+            Positioned(
+              left: 8,
+              right: 8,
+              bottom: 20,
+              child: Container(
+                  margin: EdgeInsets.all(20),
+                  padding: EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                      color: Colors.grey[900],
+                      borderRadius: BorderRadius.circular(40),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: Offset.zero,
+                        )
+                      ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Landmark: West Edmonton Mall",
+                            style: TextStyle(
+                                fontFamily: 'UniSans',
+                                color: Colors.white,
+                                fontSize: 14)),
+                        Text("Capacity",
+                            style: TextStyle(
+                                fontFamily: 'UniSans',
+                                color: Colors.white,
+                                fontSize: 14)),
+                        Text("Status",
+                            style: TextStyle(
+                                fontFamily: 'UniSans',
+                                color: Colors.white,
+                                fontSize: 14))
+                      ])),
+              //add child for container here:
+            )
+          ],
+        ));
   }
 }
