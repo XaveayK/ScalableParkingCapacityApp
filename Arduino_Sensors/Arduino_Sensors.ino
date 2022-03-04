@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------------------------------------------------
 // Filename: Arduino_Ultrasonic Measure
 // Description: Contains running code for arduino uno up to 4 attached attached sensors.
-// Authors: Dakotah Makortoff
+// Authors: Dakotah M
 //---------------------------------------------------------------------------------------------------------------------
 
 #define TRIG1 8 // Trigger Pin of Ultrasonic Sensor 1
@@ -84,15 +84,15 @@ void setup() {
    //setup sensor threshholds
    
    sens1.setThresh();
-   sens2.setThresh();
-   sens3.setThresh();
-   sens4.setThresh();
+   //sens2.setThresh();
+   //sens3.setThresh();
+   //sens4.setThresh();
    
 }
 
 void loop() {
   sens1.checkThresh();
-  sens2.checkThresh();
-  sens3.checkThresh();
-  sens4.checkThresh();
+  //sens2.checkThresh();
+  //sens3.checkThresh();
+  //sens4.checkThresh();
 }
