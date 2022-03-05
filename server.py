@@ -31,8 +31,6 @@ rightIcon = carIcon.rotate(270, expand=True)
 leftEmptyStall = emptyStall.rotate(90, expand=True)
 downEmptyStall = emptyStall.rotate(180, expand=True)
 rightEmptyStall = emptyStall.rotate(270, expand=True)
-print(carIcon.size)
-print(emptyStall.size)
 
 
 from credentials import driver, server, password as pw, database as db, username as un # This is your own personal credentials file in the same directory.
@@ -48,7 +46,6 @@ cursor = connection.cursor()
 
 app = flask.Flask(__name__)
 
-<<<<<<< Updated upstream
 conn_str = (
     r'DRIVER=%s;'
     r'server=tcp:%s;'
@@ -77,7 +74,6 @@ def landmarkExists(placeName):
     existProcedure = "Exec [dbo].[landmarkExists] @landmarkName = ?"
     cursor.execute(existProcedure, [placeName])
     count = cursor.fetchone()[0]
-=======
 
 # Function: imgPaste
 # Purpose: pastes an icon defined globally into the backgroundImg, based on orientation, type at position xValue, yValue
@@ -122,7 +118,6 @@ async def storedProcedureHelper(storedProcedure, params, functionCall):
     cursor.execute(storedProcedure, params)
     if functionCall != None:
         result = functionCall()
->>>>>>> Stashed changes
     cursor.commit()
     return count
 
@@ -137,7 +132,6 @@ def queryDataBase(query, bool):
                 data = cursor.fetchall()
     return data
 
-#Gets stall information for a single lot
 # Gets stall information for a single lot
 # Each stall entry contained in row has the following attributes:
 # row.HardwareID = hardware ID related to the stall (string datatype)
@@ -151,16 +145,13 @@ def getLotInfo(lotName):
     if count <= 0:
         return "Parking Lot does not exist in database.", 400
     try:
-<<<<<<< Updated upstream
         storedProcedure = "EXEC [dbo].[GetParkingLotInfo] @parkingLotName = ?"
         params = lotName
         cursor.execute(storedProcedure, params)
         rows = cursor.fetchall()
         cursor.commit()
         # return rows in John's desired JSON format here 
-        
-
-=======
+       
         rows = await storedProcedureHelper("EXEC [dbo].[GetParkingLotInfo] @parkingLotName = ?", lotName, cursor.fetchall) # Works
         # return rows in John's desired JSON format here
         # keeps track of maximum x and y values to crop the larger background to a reasonable size
@@ -181,7 +172,6 @@ def getLotInfo(lotName):
             await imgPaste(stallOrientation, row.isAvailable, backgroundImg, worldPositionX, worldPositionY)
         finalImg = backgroundImg.crop((0, 0, max_x + carIcon.size[0], max_y + carIcon.size[1]))
         finalImg.show()
->>>>>>> Stashed changes
         return flask.Response(status=200)
     except:
         return "Error encountered while attemping to access the database.", 500
