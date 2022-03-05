@@ -5,7 +5,10 @@
 #              Routes based on the URI. **Some paths will require JSON parsing.
 #=====================================================================================================
 
+# Add in images, lat/long instead of address, no need to change anything in API, just need to store. 
+# Build parking lot dynamically entirely, doesn't matter much its size, just reasonable. 
 from asyncio.constants import LOG_THRESHOLD_FOR_CONNLOST_WRITES
+import asyncio
 from cProfile import run
 from sqlite3 import Cursor
 import flask
@@ -35,14 +38,8 @@ rightEmptyStall = emptyStall.rotate(270, expand=True)
 
 from credentials import driver, server, password as pw, database as db, username as un # This is your own personal credentials file in the same directory.
 
-#with pyodbc.connect('DRIVER='+driver+';SERVER=tcp:'+server+';PORT=1433;DATABASE='+db+';UID='+un+';PWD='+ pw) as conn:
-#    with conn.cursor() as cursor:
-#        cursor.execute("QUERY HERE")
-
-#connection strings + cursor + connecting to server
 connection = pyodbc.connect('DRIVER='+driver+';SERVER=tcp:'+server+';PORT=1433;DATABASE='+db+';UID='+un+';PWD='+ pw)
 cursor = connection.cursor()
-
 
 app = flask.Flask(__name__)
 
@@ -108,6 +105,7 @@ async def imgPaste(orientation, type, backgroundImg, xValue, yValue):
                 backgroundImg.paste(carIcon, (xValue, yValue), carIcon)
     return
 
+
 # Helper function to assist with all stored procedures calls, allowing for easier future maintenance.
 # Params: storedProcedure - The stored procedure string
 #         params          - The parameters to pass to the stored procedure
@@ -119,18 +117,7 @@ async def storedProcedureHelper(storedProcedure, params, functionCall):
     if functionCall != None:
         result = functionCall()
     cursor.commit()
-    return count
-
-#Query the database with a premade query
-#Params: query - the query to execute
-#        bool  - If the query is select/(add or remove)
-def queryDataBase(query, bool):
-    with pyodbc.connect(conn_str) as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(query)
-            if bool:
-                data = cursor.fetchall()
-    return data
+    return result
 
 # Gets stall information for a single lot
 # Each stall entry contained in row has the following attributes:
@@ -139,10 +126,11 @@ def queryDataBase(query, bool):
 # row.ParkingLotName = contains the name of the parking lot the stall is attached to (string datatype)
 # row.Position = position coordinates along with orientation of the stall (x,y, Orientation)
 @app.route("/api/v1/parking-lot/<string:lotName>", methods=['GET'])
-def getLotInfo(lotName):
+async def getLotInfo(lotName):
     # check if parking lot exists before grabbing all records pertaining to the parking lot name
-    count = parkingLotExists(lotName)
-    if count <= 0:
+    count = await storedProcedureHelper("EXEC [dbo].[parkingLotExists] @parkingLotName = ?", lotName, cursor.fetchone)
+    #count = await parkingLotExists(lotName)
+    if count[0] <= 0:
         return "Parking Lot does not exist in database.", 400
     try:
         storedProcedure = "EXEC [dbo].[GetParkingLotInfo] @parkingLotName = ?"
@@ -172,21 +160,22 @@ def getLotInfo(lotName):
             await imgPaste(stallOrientation, row.isAvailable, backgroundImg, worldPositionX, worldPositionY)
         finalImg = backgroundImg.crop((0, 0, max_x + carIcon.size[0], max_y + carIcon.size[1]))
         finalImg.show()
+        rows = await storedProcedureHelper("EXEC [dbo].[GetParkingLotInfo] @parkingLotName = ?", lotName, cursor.fetchall) # Works
+        # return rows in John's desired JSON format here
+        for row in rows:
+            print(row)
         return flask.Response(status=200)
     except:
         return "Error encountered while attemping to access the database.", 500
 
 #Gets the information for a landmark, all lots connected to it
 @app.route("/api/v1/landmark/<string:placeName>", methods=['GET'])
-def getPlaceInfo(placeName):
-    count = landmarkExists(placeName)
-    if count <= 0:
+async def getPlaceInfo(placeName):
+    count = await storedProcedureHelper("Exec [dbo].[landmarkExists] @landmarkName = ?", placeName, cursor.fetchone)
+    if count[0] <= 0:
         return "landmark name does not exist ", 400
     try:
-        storedProcedure = "EXEC [dbo].[getLandmarkInfo] @landmarkName = ?"
-        cursor.execute(storedProcedure, placeName)
-        rows = cursor.fetchall()
-        cursor.commit()
+        rows = await storedProcedureHelper("EXEC [dbo].[getLandmarkInfo] @landmarkName = ?", placeName, cursor.fetchall)
         # return the rows in John's desired JSON format here
         if rows:
             for row in rows:
@@ -200,11 +189,9 @@ def getPlaceInfo(placeName):
 # Hardware API ROUTE: 
 # Update Parking Stall
 @app.route("/api/v1/stall-status/<string:stallID>", methods=['PUT'])
-def updateStallInfo(stallID):
+async def updateStallInfo(stallID):
     try:
-        storedProcedure = "EXEC [dbo].[updateStallInfo] @stallID = ?"
-        cursor.execute(storedProcedure, stallID)
-        cursor.commit()
+        await storedProcedureHelper("EXEC [dbo].[updateStallInfo] @stallID = ?", stallID, None)
         return flask.Response(status=200)
     except:
         return "ERROR while attempting to access database." , 500
@@ -212,23 +199,18 @@ def updateStallInfo(stallID):
 
 #Adds a parking lot (Does not require placeName)
 @app.route("/api/v1/newLot/<string:lotName>", methods=['POST'])
-def newParkingLot(lotName):
-    count = parkingLotExists(lotName)
-    if count > 0:
+async def newParkingLot(lotName):
+    count = await storedProcedureHelper("EXEC [dbo].[parkingLotExists] @parkingLotName = ?", lotName, cursor.fetchone)
+    if count[0] > 0:
         return "parking lot already exists", 400
     try:     
         requestData = request.json
         if requestData is not None:
             address = requestData["address"]
-            storedProcedure = "Exec [dbo].[AddParkingLot] @parkingLotName = ?, @address = ?"
-            params = (lotName, address)
+            await storedProcedureHelper("Exec [dbo].[AddParkingLot] @parkingLotName = ?, @address = ?", (lotName, address), None)
         else:
-            storedProcedure = "Exec [dbo].[AddParkingLot] @parkingLotName = ?"
-            params = (lotName)
-    
-    # After setting up stored Procedure and parameters for it properly, we execute query
-        cursor.execute(storedProcedure,params)
-        cursor.commit()
+            await storedProcedureHelper("Exec [dbo].[AddParkingLot] @parkingLotName = ?", lotName, None)
+
         return flask.Response(status=200)
     except:
         # Failed somewhere accessing the database
@@ -236,53 +218,47 @@ def newParkingLot(lotName):
 
 #Adds a parking lot. 
 @app.route("/api/v1/newLot/<string:placeName>/<string:lotName>", methods=['POST'])
-def newParkingLotWithLandmark(placeName, lotName):
-    exists = parkingLotExists(lotName)
-    count = landmarkExists(placeName)
-    if count < 0:
+async def newParkingLotWithLandmark(placeName, lotName):
+    #exists = parkingLotExists(lotName)
+    exists = await storedProcedureHelper("EXEC [dbo].[parkingLotExists] @parkingLotName = ?", lotName, cursor.fetchone)
+    count = await storedProcedureHelper("EXEC [dbo].[landmarkExists] @landmarkName = ?", placeName, cursor.fetchone)
+    #count = landmarkExists(placeName)
+    if count[0] < 0:
         return "Landmark linked to the parking lot does not exist", 400
-    if exists > 0:
+    if exists[0] > 0:
         return "parking lot already exists", 400
     try:
         requestData = request.json
         if requestData is not None:
             # If the json data does exist, then this means client is sending the address info 
-            address = requestData["address"]
-            storedProcedure = "Exec [dbo].[AddParkingLotWithLandmark] @landmarkName = ?, @parkingLotName = ?, @address = ?"
-            params = (placeName, lotName, address)
+            await storedProcedureHelper("Exec [dbo].[AddParkingLotWithLandmark] @landmarkName = ?, @parkingLotName = ?, @address = ?",
+            (placeName, lotName, requestData["address"]), None)
         else:
-            storedProcedure = "Exec [dbo].[AddParkingLotWithLandmark] @landmarkName = ?, @parkingLotName = ?"
-            params = (placeName, lotName)
-        
-        # After setting up stored Procedure and parameters for it properly, we execute query
-        cursor.execute(storedProcedure, params)
-        cursor.commit()
+            await storedProcedureHelper("Exec [dbo].[AddParkingLotWithLandmark] @landmarkName = ?, @parkingLotName = ?",
+            (placeName, lotName), None)
         return flask.Response(status=200)
     except:
         return "Error encountered while accessing the Database", 500
         
 #Adds a new landmark, with the landmark name being the placeName obtained from URI, and request being parsed from JSON 
 @app.route("/api/v1/newLandmark/<string:placeName>", methods=['POST'])
-def newLandMark(placeName):
+async def newLandMark(placeName):
 
     # checking if landmark already exists
-    count = landmarkExists(placeName)
-    if count > 0:
+    count = await storedProcedureHelper("EXEC [dbo].[landmarkExists] @landmarkName = ?", placeName, cursor.fetchone)
+    if count[0] > 0:
         return "Landmark already exists", 400
 
     try:
         requestData = request.json                                     # we check if json body data came with the API request: e.g. { "address:" "104th street"}
         if requestData is not None:                                    # if it did, submit it to stored procedure
-            address = requestData["address"]
-            storedProcedure = "Exec [dbo].[AddLandmark] @landmarkName = ?, @address = ?"
-            params = (placeName, address)
-            cursor.execute(storedProcedure, params)
-            cursor.commit()
+            await storedProcedureHelper("Exec [dbo].[AddLandmark] @landmarkName = ?, @address = ?", 
+            (placeName, requestData["address"]),
+            None)
         else:
-            storedProcedure = "Exec [dbo].[AddLandmark] @landmarkName = ?"
-            params = (placeName)
-            cursor.execute(storedProcedure, params)
-            cursor.commit()  
+            await storedProcedureHelper("Exec [dbo].[AddLandmark] @landmarkName = ?", 
+            (placeName), 
+            None)
         return flask.Response(status=200)  
     except:
         return "Error encountered while attempting to access Database", 500
@@ -290,29 +266,26 @@ def newLandMark(placeName):
 
 #Removes a landmark. Does NOT remove the associated parking lot, since a parking lot can exist without a landmark (unmarked parking lots)
 @app.route("/api/v1/removeLandMark/<string:placeName>", methods=['DELETE'])
-def remLandMark(placeName):
+async def remLandMark(placeName):
 
     # check if landmark exists before attempting to delete
-    count = landmarkExists(placeName)
-    if count <= 0:
+    count = await storedProcedureHelper("EXEC [dbo].[landmarkExists] @landmarkName = ?", placeName, cursor.fetchone)
+    if count[0] <= 0:
         return "Landmark does not exist", 400
     # if it exists, attempt to delete from database
     try:
-        storedProcedure = "Exec [dbo].[RemoveLandmark] @landmark = ?"
-        params = (placeName)
-        cursor.execute(storedProcedure, params)
-        cursor.commit()
+        await storedProcedureHelper("Exec [dbo].[RemoveLandmark] @landmark = ?", placeName, None)
         return flask.Response(status=200)
     except:
         return "Error encountered while attempting to Delete record from database", 500
 
 #Removes a parking lot and its stalls
 @app.route("/api/v1/removeParkingLot/<string:lotName>")
-def remParkingLot(lotName):
+async def remParkingLot(lotName):
     
     # verify if parking lot exists before attempting to delete it
-    count = parkingLotExists(lotName)
-    if count <= 0:
+    count = await storedProcedureHelper("EXEC [dbo].[parkingLotExists] @parkingLotName = ?", lotName, cursor.fetchone)
+    if count[0] <= 0:
         return "Parking Lot does not exist in database.", 400
     try:
         
@@ -321,6 +294,4 @@ def remParkingLot(lotName):
         return "Error encountered while attempting to Delete record from database", 500
 
 if __name__ == "__main__":
-    conn_str=(conn_str % (driver, server, db, un, pw))
-    print(conn_str)
     app.run(host="0.0.0.0", port=6969)
