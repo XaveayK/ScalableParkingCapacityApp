@@ -12,6 +12,29 @@ import flask
 import pyodbc
 import apiStructs
 from flask import request
+from PIL import Image, ImageDraw
+
+
+# Images to create the parking lot map are loaded in the following 2 lines, change the path to where the file is located on your pc
+carIcon = Image.open("G:\School Files\Capstone\\testStall.png")
+emptyStall = Image.open("G:\School Files\Capstone\\emptyTestStall.png")
+
+# dicates the size of the "thumbnails" 
+size = 1000, 900
+
+# formatting the icons above to fit the map created from them
+carIcon.thumbnail(size)
+emptyStall.thumbnail(size)
+leftIcon = carIcon.rotate(90, expand=True)
+downIcon = carIcon.rotate(180, expand=True)
+rightIcon = carIcon.rotate(270, expand=True)
+leftEmptyStall = emptyStall.rotate(90, expand=True)
+downEmptyStall = emptyStall.rotate(180, expand=True)
+rightEmptyStall = emptyStall.rotate(270, expand=True)
+print(carIcon.size)
+print(emptyStall.size)
+
+
 from credentials import driver, server, password as pw, database as db, username as un # This is your own personal credentials file in the same directory.
 
 #with pyodbc.connect('DRIVER='+driver+';SERVER=tcp:'+server+';PORT=1433;DATABASE='+db+';UID='+un+';PWD='+ pw) as conn:
@@ -25,6 +48,7 @@ cursor = connection.cursor()
 
 app = flask.Flask(__name__)
 
+<<<<<<< Updated upstream
 conn_str = (
     r'DRIVER=%s;'
     r'server=tcp:%s;'
@@ -53,6 +77,52 @@ def landmarkExists(placeName):
     existProcedure = "Exec [dbo].[landmarkExists] @landmarkName = ?"
     cursor.execute(existProcedure, [placeName])
     count = cursor.fetchone()[0]
+=======
+
+# Function: imgPaste
+# Purpose: pastes an icon defined globally into the backgroundImg, based on orientation, type at position xValue, yValue
+# Params:  orientation   - The orientation of the parking stall (up, right, left, down abbreviated to "U", "R", "L", "D")
+#          type          - The type of stall, either empty or filled (based on isAvailable member in database) = True or False
+#          backgroundImg - The background image we are pasting the icon's onto (the canvas if you will)
+#          xValue        - The xValue where the icon is pasted
+#          yValue        - The yValue where the icon is pasted 
+# Returns: nothing
+async def imgPaste(orientation, type, backgroundImg, xValue, yValue):
+    if type:
+        match orientation:
+            # switch statement for drawing when there is NO car in the stall/stall is available
+            case "L":
+                backgroundImg.paste(leftEmptyStall, (xValue, yValue), leftEmptyStall)
+            case "R":
+                backgroundImg.paste(rightEmptyStall, (xValue, yValue), rightEmptyStall)
+            case "D":
+                backgroundImg.paste(downEmptyStall, (xValue, yValue), downEmptyStall)
+            case _:
+                backgroundImg.paste(emptyStall, (xValue, yValue), emptyStall)
+    else:
+        # switch statement when there IS a car in the stall/stall is taken
+        match orientation:
+            case "L":
+                backgroundImg.paste(leftIcon, (xValue, yValue), leftIcon)
+            case "R":
+                backgroundImg.paste(rightIcon, (xValue, yValue), rightIcon)
+            case "D":
+                backgroundImg.paste(downIcon, (xValue, yValue), downIcon)
+            case _:
+                backgroundImg.paste(carIcon, (xValue, yValue), carIcon)
+    return
+
+# Helper function to assist with all stored procedures calls, allowing for easier future maintenance.
+# Params: storedProcedure - The stored procedure string
+#         params          - The parameters to pass to the stored procedure
+#         functionCall    - either none, or the cursor method to call (i.e cursor.fetchone)
+# Returns: result - either None or the result of the method call on cursor.
+async def storedProcedureHelper(storedProcedure, params, functionCall):
+    result = None
+    cursor.execute(storedProcedure, params)
+    if functionCall != None:
+        result = functionCall()
+>>>>>>> Stashed changes
     cursor.commit()
     return count
 
@@ -68,10 +138,12 @@ def queryDataBase(query, bool):
     return data
 
 #Gets stall information for a single lot
+# Gets stall information for a single lot
 # Each stall entry contained in row has the following attributes:
 # row.HardwareID = hardware ID related to the stall (string datatype)
 # row.isAvailable = value that tells whether a vehicle is in the stall or not (boolean data type)
 # row.ParkingLotName = contains the name of the parking lot the stall is attached to (string datatype)
+# row.Position = position coordinates along with orientation of the stall (x,y, Orientation)
 @app.route("/api/v1/parking-lot/<string:lotName>", methods=['GET'])
 def getLotInfo(lotName):
     # check if parking lot exists before grabbing all records pertaining to the parking lot name
@@ -79,6 +151,7 @@ def getLotInfo(lotName):
     if count <= 0:
         return "Parking Lot does not exist in database.", 400
     try:
+<<<<<<< Updated upstream
         storedProcedure = "EXEC [dbo].[GetParkingLotInfo] @parkingLotName = ?"
         params = lotName
         cursor.execute(storedProcedure, params)
@@ -87,6 +160,28 @@ def getLotInfo(lotName):
         # return rows in John's desired JSON format here 
         
 
+=======
+        rows = await storedProcedureHelper("EXEC [dbo].[GetParkingLotInfo] @parkingLotName = ?", lotName, cursor.fetchall) # Works
+        # return rows in John's desired JSON format here
+        # keeps track of maximum x and y values to crop the larger background to a reasonable size
+        max_x, max_y = 0, 0
+        # background image that our Icon's get "pasted" into
+        backgroundImg = Image.new( mode = "RGB", size = (9999, 9999), color = (112, 128, 144))
+
+        for row in rows:
+            stallOrientation = row.Position.split(",")[2]
+            worldPositionX, worldPositionY = int(row.Position.split(",")[0]), int(row.Position.split(",")[1])
+            
+            if max_x < worldPositionX:
+                max_x = worldPositionX 
+
+            if max_y < worldPositionY:
+                max_y = worldPositionY
+
+            await imgPaste(stallOrientation, row.isAvailable, backgroundImg, worldPositionX, worldPositionY)
+        finalImg = backgroundImg.crop((0, 0, max_x + carIcon.size[0], max_y + carIcon.size[1]))
+        finalImg.show()
+>>>>>>> Stashed changes
         return flask.Response(status=200)
     except:
         return "Error encountered while attemping to access the database.", 500
