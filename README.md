@@ -9,6 +9,9 @@ Installing Flask Package
 
 >pip install Flask
 
+Installing Async Flask
+
+>pip install aioflask
 
 Installing pyodbc Package
 
