@@ -43,35 +43,6 @@ cursor = connection.cursor()
 
 app = flask.Flask(__name__)
 
-conn_str = (
-    r'DRIVER=%s;'
-    r'server=tcp:%s;'
-    r'PORT=1433;'
-    r'DATABASE=%s;'
-    r'UID=%s;'
-    r'PWD=%s'
-)
-
-# function: parkingLotExists
-# Parameters: lotName - the name of the parking lot
-# Description: Checks whether the name of the parking lot exists, and stores it in a variable called count.
-#              If there are no results, count = 0
-def parkingLotExists(lotName):
-    existProcedure = "EXEC [dbo].[parkingLotExists] @parkingLotName = ?"
-    cursor.execute(existProcedure, lotName)
-    count = cursor.fetchone()[0]
-    cursor.commit()
-    return count
-
-# function: landmarkExists
-# Parameters: placeName - The name of the landmark
-# Description: Checks whether the name of the landmark exists, and stores it in a variable called count. 
-#              if there are no results, count = 0
-def landmarkExists(placeName):
-    existProcedure = "Exec [dbo].[landmarkExists] @landmarkName = ?"
-    cursor.execute(existProcedure, [placeName])
-    count = cursor.fetchone()[0]
-
 # Function: imgPaste
 # Purpose: pastes an icon defined globally into the backgroundImg, based on orientation, type at position xValue, yValue
 # Params:  orientation   - The orientation of the parking stall (up, right, left, down abbreviated to "U", "R", "L", "D")
@@ -133,13 +104,6 @@ async def getLotInfo(lotName):
     if count[0] <= 0:
         return "Parking Lot does not exist in database.", 400
     try:
-        storedProcedure = "EXEC [dbo].[GetParkingLotInfo] @parkingLotName = ?"
-        params = lotName
-        cursor.execute(storedProcedure, params)
-        rows = cursor.fetchall()
-        cursor.commit()
-        # return rows in John's desired JSON format here 
-       
         rows = await storedProcedureHelper("EXEC [dbo].[GetParkingLotInfo] @parkingLotName = ?", lotName, cursor.fetchall) # Works
         # return rows in John's desired JSON format here
         # keeps track of maximum x and y values to crop the larger background to a reasonable size
