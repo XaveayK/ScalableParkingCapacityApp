@@ -14,9 +14,10 @@
 #define ECHO3 6 // Echo Pin of Ultrasonic Sensor 3
 #define ECHO4 7 // Echo Pin of Ultrasonic Sensor 4
 
-
-const int LEDPin = 13;
-const int arduinoNum = 1;
+#define HWID1 "A1S1" // HWID of sensor 1. A1 = Arduino 1, S1 = Sensor 1
+#define HWID2 "A1S2"
+#define HWID3 "A1S3"
+#define HWID4 "A1S4"
 
 class Sensor{
   private:
@@ -50,39 +51,38 @@ class Sensor{
   }
   
   void setThresh(){
-     int cycles = 9;
+     int cycles = 10; //Cycles is the number of times that we check the with the sensors to grab a baseline distance for an empty spot
      int overall;
      for(int i=0; i<cycles; i++){
       int current = distanceCalc();
       overall += current; 
       }
-     overall=overall/cycles;
-     this->thresh = overall;
+     overall=overall/cycles;//take avg of all checks
+     this->thresh = overall;//set threshold
     }
     
   void checkThresh(){
     int distance = distanceCalc();
-    int threshError = (thresh * 0.70);
+    int threshError = (thresh * 0.80);
     if(threshError>distance){
-      Serial.print(HWID);
-      Serial.println();
+      Serial.print(HWID);//print HWID as triggered to serial output
+      Serial.println();//break line
       delay(1000);
       }
   }
 };
  
 
-Sensor sens1 = Sensor(ECHO1, TRIG1, "A1S1"); // sensor1 has pins 4 as echo and 8 as trig
-Sensor sens2 = Sensor(ECHO2, TRIG2, "A1S2");// sensor2 has pins 5 as echo and 9 as trig
-Sensor sens3 = Sensor(ECHO3, TRIG3, "A1S3");// sensor3 has pins 6 as echo and 10 as trig
-Sensor sens4 = Sensor(ECHO4, TRIG4, "A1S4");// sensor4 has pins 7 as echo and 11 as trig
+Sensor sens1 = Sensor(ECHO1, TRIG1, HWID1); // sensor1 has pins 4 as echo and 8 as trig
+Sensor sens2 = Sensor(ECHO2, TRIG2, HWID2);// sensor2 has pins 5 as echo and 9 as trig
+Sensor sens3 = Sensor(ECHO3, TRIG3, HWID3);// sensor3 has pins 6 as echo and 10 as trig
+Sensor sens4 = Sensor(ECHO4, TRIG4, HWID4);// sensor4 has pins 7 as echo and 11 as trig
 
 void setup() {
    pinMode(13, OUTPUT);
    digitalWrite(13, LOW);
    Serial.begin(9600); // Starting Serial Terminal
    //setup sensor threshholds
-   
    sens1.setThresh();
    //sens2.setThresh();
    //sens3.setThresh();
