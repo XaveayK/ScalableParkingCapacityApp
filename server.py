@@ -15,7 +15,8 @@ from sqlite3 import Cursor
 import flask
 import pyodbc
 import apiStructs
-from flask import request
+import json
+from flask import request, jsonify
 from PIL import Image, ImageDraw
 
 
@@ -102,7 +103,6 @@ async def storedProcedureHelper(storedProcedure, params, functionCall):
 async def getLotInfo(lotName):
     # check if parking lot exists before grabbing all records pertaining to the parking lot name
     count = await storedProcedureHelper("EXEC [dbo].[parkingLotExists] @parkingLotName = ?", lotName, cursor.fetchone)
-    #count = await parkingLotExists(lotName)
     if count[0] <= 0:
         return "Parking Lot does not exist in database.", 400
     try:
@@ -142,15 +142,20 @@ async def getPlaceInfo(placeName):
         return "landmark name does not exist ", 400
     try:
         rows = await storedProcedureHelper("EXEC [dbo].[getLandmarkInfo] @landmarkName = ?", placeName, cursor.fetchall)
-        # return the rows in John's desired JSON format here
         if rows:
+            totalJson= {}
             for row in rows:
-                print(row)
+                tempDict = {
+                    'parkinglot': str(row[1]),
+                    'latlong': str(row[2])
+                }
+                totalJson[str(row[0])] = tempDict
+            resp = jsonify(totalJson)
+            resp.status_code = 200
+            return resp
         else:
             print("nothing here")
-
-        
-        return flask.Response(status=200)
+            return flask.Response(status=200)
     except:
         return "Error encountered while attempting to access the database", 500
 
@@ -164,6 +169,13 @@ async def updateStallInfo(stallID):
     except:
         return "ERROR while attempting to access database." , 500
 
+@app.route("/api/v1/newStall/<string:lotName>/<string:stallID>/<string:position>", methods=["POST"])
+async def newStall(lotName, stallID, position):
+    try:
+        await storedProcedureHelper("EXEC [dbo].[AddStall] @HardwareID = ?, @ParkingLotName = ?, @Position = ?", (stallID, lotName, position), None)
+        return flask.Response(status=200)
+    except:
+        return "ERROR while creating new stall.", 500
 
 #Adds a parking lot (Does not require placeName)
 @app.route("/api/v1/newLot/<string:lotName>", methods=['POST'])
