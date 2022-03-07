@@ -8,6 +8,7 @@
 # Add in images, lat/long instead of address, no need to change anything in API, just need to store. 
 # Build parking lot dynamically entirely, doesn't matter much its size, just reasonable. 
 from asyncio.constants import LOG_THRESHOLD_FOR_CONNLOST_WRITES
+import os
 import asyncio
 from cProfile import run
 from sqlite3 import Cursor
@@ -19,8 +20,9 @@ from PIL import Image, ImageDraw
 
 
 # Images to create the parking lot map are loaded in the following 2 lines, change the path to where the file is located on your pc
-carIcon = Image.open("G:\School Files\Capstone\\testStall.png")
-emptyStall = Image.open("G:\School Files\Capstone\\emptyTestStall.png")
+curr_dir = os.path.dirname(__file__)
+carIcon = Image.open(curr_dir + "/images/testStall.png")#"G:\School Files\Capstone\\testStall.png")
+emptyStall = Image.open(curr_dir + "/images/emptyTestStall.png")#"G:\School Files\Capstone\\emptyTestStall.png")
 
 # dicates the size of the "thumbnails" 
 size = 1000, 900
@@ -146,6 +148,8 @@ async def getPlaceInfo(placeName):
                 print(row)
         else:
             print("nothing here")
+
+        
         return flask.Response(status=200)
     except:
         return "Error encountered while attempting to access the database", 500
