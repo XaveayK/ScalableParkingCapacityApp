@@ -57,28 +57,26 @@ app = flask.Flask(__name__)
 #          yValue        - The yValue where the icon is pasted 
 # Returns: nothing
 async def imgPaste(orientation, type, backgroundImg, xValue, yValue):
+    # Cannot do switch statements (match) in Python 3.10
     if type:
-        match orientation:
-            # switch statement for drawing when there is NO car in the stall/stall is available
-            case "L":
-                backgroundImg.paste(leftEmptyStall, (xValue, yValue), leftEmptyStall)
-            case "R":
-                backgroundImg.paste(rightEmptyStall, (xValue, yValue), rightEmptyStall)
-            case "D":
+        if orientation == "L":
+            backgroundImg.paste(leftEmptyStall, (xValue, yValue), leftEmptyStall)
+        elif orientation == "R":
+            backgroundImg.paste(rightEmptyStall, (xValue, yValue), rightEmptyStall)
+        elif orientation == "D":
                 backgroundImg.paste(downEmptyStall, (xValue, yValue), downEmptyStall)
-            case _:
-                backgroundImg.paste(emptyStall, (xValue, yValue), emptyStall)
+        else:
+            backgroundImg.paste(emptyStall, (xValue, yValue), emptyStall)
     else:
-        # switch statement when there IS a car in the stall/stall is taken
-        match orientation:
-            case "L":
-                backgroundImg.paste(leftIcon, (xValue, yValue), leftIcon)
-            case "R":
-                backgroundImg.paste(rightIcon, (xValue, yValue), rightIcon)
-            case "D":
-                backgroundImg.paste(downIcon, (xValue, yValue), downIcon)
-            case _:
-                backgroundImg.paste(carIcon, (xValue, yValue), carIcon)
+        # statement when there IS a car in the stall/stall is taken
+        if orientation == "L":
+            backgroundImg.paste(leftIcon, (xValue, yValue), leftIcon)
+        elif orientation == "R":
+            backgroundImg.paste(rightIcon, (xValue, yValue), rightIcon)
+        elif orientation == "D":
+            backgroundImg.paste(downIcon, (xValue, yValue), downIcon)
+        else:
+            backgroundImg.paste(carIcon, (xValue, yValue), carIcon)
     return
 
 
