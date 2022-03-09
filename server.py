@@ -16,6 +16,8 @@ import flask
 import pyodbc
 import apiStructs
 import json
+import base64
+import io
 from flask import request, jsonify
 from PIL import Image, ImageDraw
 
@@ -125,12 +127,12 @@ async def getLotInfo(lotName):
 
             await imgPaste(stallOrientation, row.isAvailable, backgroundImg, worldPositionX, worldPositionY)
         finalImg = backgroundImg.crop((0, 0, max_x + carIcon.size[0], max_y + carIcon.size[1]))
-        finalImg.show()
-        rows = await storedProcedureHelper("EXEC [dbo].[GetParkingLotInfo] @parkingLotName = ?", lotName, cursor.fetchall) # Works
-        # return rows in John's desired JSON format here
-        for row in rows:
-            print(row)
-        return flask.Response(status=200)
+        data = io.BytesIO()
+        finalImg.save(io.BytesIO(), "PNG")
+        imgEnc = base64.b64encode(data.getvalue()).decode("utf8")
+        payload = jsonify({"image": imgEnc})
+        payload.status_code = 200
+        return payload
     except:
         return "Error encountered while attemping to access the database.", 500
 
@@ -245,7 +247,7 @@ async def newLandMark(placeName):
     
 
 #Removes a landmark. Does NOT remove the associated parking lot, since a parking lot can exist without a landmark (unmarked parking lots)
-@app.route("/api/v1/removeLandMark/<string:placeName>", methods=['DELETE'])
+@app.route("/api/v1/removeLandmark/<string:placeName>", methods=['DELETE'])
 async def remLandMark(placeName):
 
     # check if landmark exists before attempting to delete
