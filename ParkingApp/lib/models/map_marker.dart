@@ -9,9 +9,15 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 */
 class MapMarker {
-  const MapMarker({required this.title, required this.location});
+  const MapMarker(
+      {required this.title,
+      required this.location,
+      required this.total,
+      required this.avail});
   final String title;
   final LatLng location;
+  final int total;
+  final int avail;
 }
 
 //test models:
@@ -21,9 +27,13 @@ final mapMarkers = [
   MapMarker(
     title: 'West Edmonton Mall',
     location: _locations[0],
+    total: 10,
+    avail: 8,
   ),
   MapMarker(
     title: 'Southgate',
     location: _locations[1],
+    total: 10,
+    avail: 8,
   )
 ];

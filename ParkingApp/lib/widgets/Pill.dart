@@ -38,8 +38,8 @@ class Pill extends StatelessWidget {
             ]),
         child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
           _Label("Landmark: " + this.landmark),
-          _Label("Capacity"),
-          _Label("Status"),
+          _Label("Total: "),
+          _Label("Available: "),
           RaisedButton(
               onPressed: () {
                 _nextScreen(context);
@@ -51,7 +51,7 @@ class Pill extends StatelessWidget {
         );
   }
   /**
-   * Label: private method that creates a Text widget
+   * Label: private method that creates a Text widget 
    * with font of Unisans
    * 
    * @param: String text

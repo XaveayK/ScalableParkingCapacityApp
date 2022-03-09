@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_in_flutter/widgets/DropdownWidget.dart';
 import 'package:google_maps_in_flutter/widgets/ParkingLot.dart';
 /**
  * This class Widget is responsible for creating the screen for the Parking Lot.
@@ -13,6 +14,7 @@ class ParkingScreen extends StatelessWidget {
    */
   @override
   Widget build(BuildContext context) {
+    String dropdownValue = '1';
     return Scaffold(
       appBar: new AppBar(
         title: new Text("Parking Lot View",
@@ -22,15 +24,30 @@ class ParkingScreen extends StatelessWidget {
       ),
       body: Container(
         color: Colors.blueGrey[900],
-        child: Center(
-          child: InteractiveViewer(
-            panEnabled: true,
-            minScale: 0.5,
-            maxScale: 4,
-            boundaryMargin: EdgeInsets.zero,
-            child: ParkingLot(),
+        child: Stack(children: <Widget>[
+          Container(
+            alignment: Alignment.topCenter,
+            child: DropdownMenuWidget(),
           ),
-        ),
+          Center(
+            child: InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 4,
+              boundaryMargin: EdgeInsets.zero,
+              child: ParkingLot(),
+              //child: Image.asset('assets/images/ParkingLot.png'),
+            ),
+          ),
+          Container(
+            alignment: Alignment.bottomCenter,
+            child: IconButton(
+              icon: new Image.asset('assets/images/RefreshIcon.png'),
+              color: Colors.white,
+              onPressed: () {},
+            ),
+          )
+        ]),
       ),
     );
   }
