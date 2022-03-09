@@ -9,6 +9,9 @@ Installing Flask Package
 
 >pip install Flask
 
+Installing Async Flask
+
+>pip install aioflask
 
 Installing pyodbc Package
 
@@ -21,6 +24,8 @@ Installing ODBC package
 
 https://www.microsoft.com/en-us/download/details.aspx?id=50420 Is the source location. Must be 13. Once installed, will run on native linux or native windows.
 
+Installing Python PIL (Imaging program for Python)
+>pip install --upgrade Pillow
 
 Packages:
 - Flask : Required package for python, in order to host our Web Server API
