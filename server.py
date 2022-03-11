@@ -14,7 +14,6 @@ from cProfile import run
 from sqlite3 import Cursor
 import flask
 import pyodbc
-import apiStructs
 import json
 import base64
 import io
@@ -43,7 +42,7 @@ rightEmptyStall = emptyStall.rotate(270, expand=True)
 
 from credentials import driver, server, password as pw, database as db, username as un # This is your own personal credentials file in the same directory.
 
-connection = pyodbc.connect('DRIVER='+driver+';SERVER=tcp:'+server+';PORT=1433;DATABASE='+db+';UID='+un+';PWD='+ pw)
+connection = pyodbc.connect('DRIVER='+driver+';SERVER=tcp:'+server+';PORT=1433;DATABASE='+db+';UID='+un+';PWD='+pw)
 cursor = connection.cursor()
 
 app = flask.Flask(__name__)
