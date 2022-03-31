@@ -1,6 +1,8 @@
 // ignore_for_file: empty_constructor_bodies
 import 'dart:async';
+import 'dart:io';
 
+import 'package:double_back_to_close_app/double_back_to_close_app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -11,6 +13,8 @@ import 'package:location/location.dart';
 import 'package:google_maps_in_flutter/models/map_marker.dart';
 
 //global variables:
+const double MAP_PILL_VISIBLE_POSITION = 550;
+const double MAP_PILL_INVISIBLE_POSITION = 1200;
 const double PIN_VISIBLE_POSITION = 20;
 const double PIN_INVISIBLE_POSITION = -220;
 
@@ -47,6 +51,7 @@ class _MapScreenState extends State<MapScreen> {
   Location currentLocation = Location();
   late GoogleMapController _googleMapController;
   Set<Marker> _markers = {};
+  double mapPillPos = MAP_PILL_VISIBLE_POSITION;
   double pillPos = PIN_VISIBLE_POSITION;
   late String relativeLandmark = " ";
   late int relativeTotal = 0;
@@ -75,7 +80,6 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Stream<Set<dynamic>> _createMarkerSet() async* {
-    print("begin: " + _markers.toString());
     bool _running = true;
     await Future<void>.delayed(const Duration(seconds: 1));
     mapMarkers = await createMapMarkerList();
@@ -83,6 +87,7 @@ class _MapScreenState extends State<MapScreen> {
     _markers = markerTemp.toSet();
     yield _markers;
     while (_running) {
+      print(mapMarkers.toString());
       await Future<void>.delayed(const Duration(seconds: 30));
       mapMarkers = await createMapMarkerList();
       List<Marker> markerTemp = toMarker(mapMarkers);
@@ -146,6 +151,71 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: unnecessary_new
+    return new WillPopScope(
+      onWillPop: _onWillPop,
+      child: getScaffold(),
+    );
+  }
+
+  Future<bool> _onWillPop() async {
+    return (await showDialog(
+          context: context,
+          builder: (context) => new AlertDialog(
+            title: new Text('Are you sure?'),
+            content: new Text('Do you want to exit the ParkingApp'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: new Text('No'),
+              ),
+              TextButton(
+                onPressed: () => exit(0),
+                child: new Text('Yes'),
+              ),
+            ],
+          ),
+        )) ??
+        false;
+  }
+
+  List<Widget> getWidgetList(List<dynamic> mapMarkerList) {
+    List<Widget> widgetList = [];
+    widgetList.add(
+      Container(
+          margin: EdgeInsets.all(1),
+          padding: EdgeInsets.all(1),
+          child: Text("All Available Parking Lots",
+              style: TextStyle(
+                  fontFamily: 'UniSans',
+                  color: Colors.blueGrey,
+                  fontSize: 18))),
+    );
+
+    //iterate through and create a clickable container which contains
+    //the parking lot info.
+    for (int i = 0; i < mapMarkerList.length; i++) {
+      print('create');
+      widgetList.add(InkWell(
+          child: Container(
+              margin: EdgeInsets.all(1),
+              padding: EdgeInsets.all(1),
+              child: Text(mapMarkerList[i].title,
+                  style: TextStyle(
+                      fontFamily: 'UniSans',
+                      color: Colors.white,
+                      fontSize: 14))),
+          onTap: () {
+            _googleMapController?.animateCamera(CameraUpdate.newCameraPosition(
+                CameraPosition(target: mapMarkerList[i].location, zoom: 15)));
+          }));
+      widgetList.add(SizedBox(height: 5));
+    }
+
+    return widgetList;
+  }
+
+  Widget getScaffold() {
     return Scaffold(
       appBar: new AppBar(
           title: new Text("Parking App",
@@ -161,90 +231,111 @@ class _MapScreenState extends State<MapScreen> {
           Positioned
 
         */
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: StreamBuilder(
-                stream: _createMarkerSet(),
-                builder: (context, AsyncSnapshot snapshot) {
-                  if (snapshot.hasError) {
-                    print('error');
-                    Scaffold.of(context).showSnackBar(errorSnackBar);
-                  }
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-
-                  return GoogleMap(
-                    //minMaxZoomPreference: MinMaxZoomPreference(10, 100),
-                    zoomGesturesEnabled: true,
-                    myLocationButtonEnabled: false,
-                    zoomControlsEnabled: false,
-                    initialCameraPosition: _initialCameraPosition,
-                    onMapCreated: (GoogleMapController controller) {
-                      print('onMap');
-                      _googleMapController = controller;
-                      changeMapStyle();
-                    },
-                    onTap: (LatLng coord) {
-                      setState(() {
-                        this.isActive = false;
-                        this.pillPos = PIN_INVISIBLE_POSITION;
-                      });
-                    },
-                    markers: snapshot.data!,
-                  );
-                }),
-          ),
-          //AnimatedPositioned widget allows the Pill child widget to be animated
-          //upon clicking a marker from the map
-          if (isVisible)
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeInOut,
-              left: 8,
-              right: 8,
-              bottom: this.pillPos,
-              child: Pill(
-                landmark: relativeLandmark,
-                total: relativeTotal,
-                available: relativeAvail,
-                numFloors: relativeFloors,
-              ),
-            ),
-
-          Positioned(
-            left: 30,
-            right: 30,
-            bottom: 600,
-            child: Container(
-              margin: EdgeInsets.all(30),
-              padding: EdgeInsets.all(30),
-              decoration: BoxDecoration(
-                  color: Colors.grey[900],
-                  borderRadius: BorderRadius.circular(40),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: Offset.zero,
-                    )
-                  ]),
-            ),
-          ),
-
-          Align(
-              alignment: Alignment.topLeft,
-              child: FloatingActionButton(
-                  onPressed: () {}, child: Icon(Icons.search))),
-        ],
-      ),
-      // floatingActionButton: FloatingActionButton(
-      //     child: Icon(Icons.location_searching),
-      //     onPressed: () {
-      //       fetchLocation();
-      //       print("size: " + _markers.length.toString());
-      //     }),
+      body: getScreen(),
     );
+  }
+
+  Widget getScreen() {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: StreamBuilder(
+              stream: _createMarkerSet(),
+              builder: (context, AsyncSnapshot snapshot) {
+                if (snapshot.hasError) {
+                  Scaffold.of(context).showSnackBar(errorSnackBar);
+                }
+                if (!snapshot.hasData) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                return GoogleMap(
+                  //minMaxZoomPreference: MinMaxZoomPreference(10, 100),
+                  zoomGesturesEnabled: true,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                  initialCameraPosition: _initialCameraPosition,
+                  onMapCreated: (GoogleMapController controller) {
+                    _googleMapController = controller;
+                    changeMapStyle();
+                  },
+                  onTap: (LatLng coord) {
+                    setState(() {
+                      this.isActive = false;
+                      this.isVisible = false;
+
+                      this.pillPos = PIN_INVISIBLE_POSITION;
+                    });
+                  },
+                  markers: snapshot.data!,
+                );
+              }),
+        ),
+        if (searchIsClicked)
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeIn,
+            left: 12,
+            right: 12,
+            bottom: this.mapPillPos,
+            child: getMapPill(),
+          ),
+
+        //Container(child: pillWidget(mapMarkers)),
+        //AnimatedPositioned widget allows the Pill child widget to be animated
+        //upon clicking a marker from the map
+        if (isVisible)
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+            left: 8,
+            right: 8,
+            bottom: this.pillPos,
+            child: Pill(
+              landmark: relativeLandmark,
+              total: relativeTotal,
+              available: relativeAvail,
+              numFloors: relativeFloors,
+            ),
+          ),
+
+        Align(
+            alignment: Alignment.topLeft,
+            child: FloatingActionButton(
+                onPressed: () {
+                  setState(() {
+                    if (!searchIsClicked) {
+                      this.mapPillPos = MAP_PILL_VISIBLE_POSITION;
+                      this.searchIsClicked = true;
+                    } else {
+                      this.mapPillPos = MAP_PILL_INVISIBLE_POSITION;
+                      this.searchIsClicked = false;
+                    }
+                  });
+                },
+                child: Icon(Icons.search))),
+      ],
+    );
+  }
+
+  Widget getMapPill() {
+    return Container(
+        margin: EdgeInsets.all(20),
+        padding: EdgeInsets.all(15),
+        decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(40),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 10,
+                offset: Offset.zero,
+              )
+            ]),
+        child: SingleChildScrollView(
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: getWidgetList(mapMarkers)),
+        ));
   }
 }

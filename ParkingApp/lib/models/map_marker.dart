@@ -68,8 +68,6 @@ double checkCoord(String toCheck) {
 
 //create an iterative function that loads the json data here:
 Future<List<dynamic>> createMapMarkerList() async {
-  print('got here');
-
   Map<String, dynamic> jsonData;
   //fake URL:
   // final response = await http.get(Uri.parse(fake_URL));

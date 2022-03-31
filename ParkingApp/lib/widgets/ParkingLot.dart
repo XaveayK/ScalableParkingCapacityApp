@@ -44,7 +44,6 @@ class _ParkingLotState extends State<ParkingLot> {
 
   @override
   Widget build(BuildContext context) {
-    print('got here');
     return StreamBuilder<dynamic>(
       stream: _createWidgetList(widget.numFloors),
       initialData: [],
