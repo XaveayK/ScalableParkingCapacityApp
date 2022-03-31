@@ -14,8 +14,9 @@ from cProfile import run
 from sqlite3 import Cursor
 import flask
 import pyodbc
-import apiStructs
 import json
+import base64
+import io
 from flask import request, jsonify
 from PIL import Image, ImageDraw
 
@@ -41,7 +42,7 @@ rightEmptyStall = emptyStall.rotate(270, expand=True)
 
 from credentials import driver, server, password as pw, database as db, username as un # This is your own personal credentials file in the same directory.
 
-connection = pyodbc.connect('DRIVER='+driver+';SERVER=tcp:'+server+';PORT=1433;DATABASE='+db+';UID='+un+';PWD='+ pw)
+connection = pyodbc.connect('DRIVER='+driver+';SERVER=tcp:'+server+';PORT=1433;DATABASE='+db+';UID='+un+';PWD='+pw)
 cursor = connection.cursor()
 
 app = flask.Flask(__name__)
@@ -55,28 +56,26 @@ app = flask.Flask(__name__)
 #          yValue        - The yValue where the icon is pasted 
 # Returns: nothing
 async def imgPaste(orientation, type, backgroundImg, xValue, yValue):
+    # Cannot do switch statements (match) in Python 3.10
     if type:
-        match orientation:
-            # switch statement for drawing when there is NO car in the stall/stall is available
-            case "L":
-                backgroundImg.paste(leftEmptyStall, (xValue, yValue), leftEmptyStall)
-            case "R":
-                backgroundImg.paste(rightEmptyStall, (xValue, yValue), rightEmptyStall)
-            case "D":
+        if orientation == "L":
+            backgroundImg.paste(leftEmptyStall, (xValue, yValue), leftEmptyStall)
+        elif orientation == "R":
+            backgroundImg.paste(rightEmptyStall, (xValue, yValue), rightEmptyStall)
+        elif orientation == "D":
                 backgroundImg.paste(downEmptyStall, (xValue, yValue), downEmptyStall)
-            case _:
-                backgroundImg.paste(emptyStall, (xValue, yValue), emptyStall)
+        else:
+            backgroundImg.paste(emptyStall, (xValue, yValue), emptyStall)
     else:
-        # switch statement when there IS a car in the stall/stall is taken
-        match orientation:
-            case "L":
-                backgroundImg.paste(leftIcon, (xValue, yValue), leftIcon)
-            case "R":
-                backgroundImg.paste(rightIcon, (xValue, yValue), rightIcon)
-            case "D":
-                backgroundImg.paste(downIcon, (xValue, yValue), downIcon)
-            case _:
-                backgroundImg.paste(carIcon, (xValue, yValue), carIcon)
+        # statement when there IS a car in the stall/stall is taken
+        if orientation == "L":
+            backgroundImg.paste(leftIcon, (xValue, yValue), leftIcon)
+        elif orientation == "R":
+            backgroundImg.paste(rightIcon, (xValue, yValue), rightIcon)
+        elif orientation == "D":
+            backgroundImg.paste(downIcon, (xValue, yValue), downIcon)
+        else:
+            backgroundImg.paste(carIcon, (xValue, yValue), carIcon)
     return
 
 
@@ -125,12 +124,12 @@ async def getLotInfo(lotName):
 
             await imgPaste(stallOrientation, row.isAvailable, backgroundImg, worldPositionX, worldPositionY)
         finalImg = backgroundImg.crop((0, 0, max_x + carIcon.size[0], max_y + carIcon.size[1]))
-        finalImg.show()
-        rows = await storedProcedureHelper("EXEC [dbo].[GetParkingLotInfo] @parkingLotName = ?", lotName, cursor.fetchall) # Works
-        # return rows in John's desired JSON format here
-        for row in rows:
-            print(row)
-        return flask.Response(status=200)
+        data = io.BytesIO()
+        finalImg.save(io.BytesIO(), "PNG")
+        imgEnc = base64.b64encode(data.getvalue()).decode("utf8")
+        payload = jsonify({"image": imgEnc})
+        payload.status_code = 200
+        return payload
     except:
         return "Error encountered while attemping to access the database.", 500
 
@@ -245,7 +244,7 @@ async def newLandMark(placeName):
     
 
 #Removes a landmark. Does NOT remove the associated parking lot, since a parking lot can exist without a landmark (unmarked parking lots)
-@app.route("/api/v1/removeLandMark/<string:placeName>", methods=['DELETE'])
+@app.route("/api/v1/removeLandmark/<string:placeName>", methods=['DELETE'])
 async def remLandMark(placeName):
 
     # check if landmark exists before attempting to delete

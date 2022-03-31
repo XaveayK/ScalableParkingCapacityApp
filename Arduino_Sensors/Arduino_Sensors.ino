@@ -51,7 +51,7 @@ class Sensor{
   }
   
   void setThresh(){
-     int cycles = 10; //Cycles is the number of times that we check the with the sensors to grab a baseline distance for an empty spot
+     int cycles = 30; //Cycles is the number of times that we check the with the sensors to grab a baseline distance for an empty spot
      int overall;
      for(int i=0; i<cycles; i++){
       int current = distanceCalc();
