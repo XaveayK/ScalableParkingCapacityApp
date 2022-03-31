@@ -11,8 +11,17 @@ import 'package:google_maps_in_flutter/screens/ParkingScreen.dart';
  */
 class Pill extends StatelessWidget {
   final String landmark;
+  final int total;
+  final int available;
+  final int numFloors;
 
-  const Pill({Key? key, required this.landmark}) : super(key: key);
+  const Pill(
+      {Key? key,
+      required this.landmark,
+      required this.total,
+      required this.available,
+      required this.numFloors})
+      : super(key: key);
   /**
    * build: build method that builds the widget:
    *  set the margin, padding, decoration, and let the child widget be
@@ -37,35 +46,39 @@ class Pill extends StatelessWidget {
               )
             ]),
         child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          _Label("Landmark: " + this.landmark),
-          _Label("Capacity"),
-          _Label("Status"),
+          Label("Landmark: " + this.landmark),
+          Label("Total: " + this.total.toString()),
+          Label("Available: " + this.available.toString()),
           RaisedButton(
               onPressed: () {
                 _nextScreen(context);
               },
-              child: _Label("Open"),
-              color: Colors.green[800])
+              child: Label("Additional Info"),
+              color: Colors.blue)
         ])
         //add child for container here:
         );
   }
   /**
-   * Label: private method that creates a Text widget
+   * Label: private method that creates a Text widget 
    * with font of Unisans
    * 
    * @param: String text
    * @returns: Text widget
    */
 
-  Text _Label(String text) {
+  Text Label(String text) {
     return Text(text,
         style: TextStyle(
             fontFamily: 'UniSans', color: Colors.white, fontSize: 14));
   }
 
   void _nextScreen(BuildContext context) {
-    RouteCreator route = new RouteCreator(screen: ParkingScreen());
+    RouteCreator route = new RouteCreator(
+        screen: ParkingScreen(
+      parkingLotName: this.landmark,
+      numFloors: numFloors,
+    ));
     Navigator.of(context).push(route.createRoute());
   }
 }
