@@ -41,6 +41,7 @@ dependencies:
   google_maps_flutter_web: ^0.3.2+1
   crypto: ^3.0.1
   location: ^4.3.0
+  double_back_to_close_app: ^2.1.0
 
   
   
