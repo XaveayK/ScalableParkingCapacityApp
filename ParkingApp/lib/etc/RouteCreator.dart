@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 class RouteCreator {
+  //attributes: Screen widget
   late Widget screen;
 
   RouteCreator({required this.screen});
 
+  //this method allows transitioning between pages;
   Route createRoute() {
     return PageRouteBuilder(
       pageBuilder: (context, animation, seconaryAnimation) => screen,

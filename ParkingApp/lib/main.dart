@@ -1,5 +1,4 @@
 // ignore_for_file: empty_constructor_bodies
-
 import 'package:flutter/material.dart';
 
 import 'package:google_maps_in_flutter/screens/LoadingScreen.dart';
