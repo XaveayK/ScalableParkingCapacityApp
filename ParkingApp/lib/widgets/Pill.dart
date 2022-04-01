@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_maps_in_flutter/etc/RouteCreator.dart';
 import 'package:google_maps_in_flutter/screens/ParkingScreen.dart';
@@ -10,6 +12,7 @@ import 'package:google_maps_in_flutter/screens/ParkingScreen.dart';
  * @author: John Penaflor
  */
 class Pill extends StatelessWidget {
+  final StreamSubscription setSubscription;
   final String landmark;
   final int total;
   final int available;
@@ -17,6 +20,7 @@ class Pill extends StatelessWidget {
 
   const Pill(
       {Key? key,
+      required this.setSubscription,
       required this.landmark,
       required this.total,
       required this.available,
@@ -33,32 +37,47 @@ class Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        margin: EdgeInsets.all(20),
-        padding: EdgeInsets.all(15),
-        decoration: BoxDecoration(
-            color: Colors.grey[900],
-            borderRadius: BorderRadius.circular(40),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 10,
-                offset: Offset.zero,
-              )
-            ]),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      margin: EdgeInsets.all(20),
+      padding: EdgeInsets.all(15),
+      decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(40),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: Offset.zero,
+            )
+          ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
           Label("Landmark: " + this.landmark),
           Label("Total: " + this.total.toString()),
           Label("Available: " + this.available.toString()),
           RaisedButton(
-              onPressed: () {
-                _nextScreen(context);
-              },
+              onPressed: () => createNextScreenRoute(context),
               child: Label("Additional Info"),
-              color: Colors.blue)
-        ])
-        //add child for container here:
-        );
+              color: Colors.blue),
+        ],
+      ),
+    );
   }
+
+  Future<dynamic> createNextScreenRoute(BuildContext context) {
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ParkingScreen(
+          setSubscription: setSubscription,
+          parkingLotName: this.landmark,
+          numFloors: numFloors,
+        ),
+      ),
+    );
+  }
+  // onPressed: () {
+  //   _nextScreen(context);
+  // },
   /**
    * Label: private method that creates a Text widget 
    * with font of Unisans
@@ -76,6 +95,7 @@ class Pill extends StatelessWidget {
   void _nextScreen(BuildContext context) {
     RouteCreator route = new RouteCreator(
         screen: ParkingScreen(
+      setSubscription: setSubscription,
       parkingLotName: this.landmark,
       numFloors: numFloors,
     ));

@@ -4,12 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_in_flutter/screens/LoadingScreen.dart';
 import 'package:google_maps_in_flutter/screens/MapScreen.dart';
 
+final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
 void main() {
-  //runApp(const MyApp());
+  runApp(const MyApp());
 
-  runApp(MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: LoadingScreen(duration: 2, goToPage: MapScreen())));
+  // runApp(MaterialApp(
+  //     debugShowCheckedModeBanner: false,
+  //     home: LoadingScreen(duration: 2, goToPage: MapScreen())));
 }
 
 class MyApp extends StatelessWidget {
@@ -24,6 +25,7 @@ class MyApp extends StatelessWidget {
         fontFamily: "UniSans",
       ),
       home: MapScreen(),
+      navigatorObservers: [routeObserver],
     );
   }
 }
