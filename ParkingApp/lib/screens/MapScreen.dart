@@ -36,12 +36,22 @@ class _MapScreenState extends State<MapScreen> {
     target: LatLng(53.5461, -113.4938),
     zoom: 11.5,
   );
-
+  //snackbars:
+  final pillSnackBar = SnackBar(
+      content: const Text('Click anywhere to close the Landmark overlay.',
+          style: TextStyle(
+              fontFamily: 'UniSans', color: Colors.white, fontSize: 14)));
   final errorSnackBar = SnackBar(
       content: const Text('Cannot get data for markers!',
           style: TextStyle(
               fontFamily: 'UniSans', color: Colors.white, fontSize: 14)));
 
+  final helpSnackBar = SnackBar(
+      content: const Text(
+          'Click on the "search" button again to close the overlay',
+          style: TextStyle(
+              fontFamily: 'UniSans', color: Colors.white, fontSize: 14)));
+  //'Click on the "search" button again to close the overlay'
   late Future<List<dynamic>> _future;
   late Timer timer;
   int counter = 0;
@@ -79,18 +89,18 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-  Stream<Set<dynamic>> _createMarkerSet() async* {
+  Stream<Set<dynamic>> _createMarkerSet(BuildContext context) async* {
     bool _running = true;
     await Future<void>.delayed(const Duration(seconds: 1));
     mapMarkers = await createMapMarkerList();
-    List<Marker> markerTemp = toMarker(mapMarkers);
+    List<Marker> markerTemp = toMarker(mapMarkers, context);
     _markers = markerTemp.toSet();
     yield _markers;
     while (_running) {
       print(mapMarkers.toString());
       await Future<void>.delayed(const Duration(seconds: 30));
       mapMarkers = await createMapMarkerList();
-      List<Marker> markerTemp = toMarker(mapMarkers);
+      List<Marker> markerTemp = toMarker(mapMarkers, context);
       _markers = markerTemp.toSet();
       yield _markers;
     }
@@ -125,16 +135,16 @@ class _MapScreenState extends State<MapScreen> {
 
   //this method populates the necessary locations to have a pinpoint marker
   //in latitude and longitude
-  List<Marker> toMarker(List<dynamic> mapMarkerList) {
+  List<Marker> toMarker(List<dynamic> mapMarkerList, BuildContext context) {
     List<Marker> markerList = [];
     for (var i = 0; i < mapMarkerList.length; i++) {
       markerList.add(Marker(
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-              (isActive) ? BitmapDescriptor.hueRed : BitmapDescriptor.hueCyan),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
           markerId: MarkerId(mapMarkerList[i].title),
           position: mapMarkerList[i].location,
           onTap: () {
             setState(() {
+              ScaffoldMessenger.of(context).showSnackBar(pillSnackBar);
               this.isActive = true;
               this.pillPos = PIN_VISIBLE_POSITION;
               this.relativeLandmark = mapMarkerList[i].title;
@@ -154,7 +164,7 @@ class _MapScreenState extends State<MapScreen> {
     // ignore: unnecessary_new
     return new WillPopScope(
       onWillPop: _onWillPop,
-      child: getScaffold(),
+      child: getScaffold(context),
     );
   }
 
@@ -215,7 +225,7 @@ class _MapScreenState extends State<MapScreen> {
     return widgetList;
   }
 
-  Widget getScaffold() {
+  Widget getScaffold(BuildContext context) {
     return Scaffold(
       appBar: new AppBar(
           title: new Text("Parking App",
@@ -231,16 +241,16 @@ class _MapScreenState extends State<MapScreen> {
           Positioned
 
         */
-      body: getScreen(),
+      body: getScreen(context),
     );
   }
 
-  Widget getScreen() {
+  Widget getScreen(BuildContext context) {
     return Stack(
       children: [
         Positioned.fill(
           child: StreamBuilder(
-              stream: _createMarkerSet(),
+              stream: _createMarkerSet(context),
               builder: (context, AsyncSnapshot snapshot) {
                 if (snapshot.hasError) {
                   Scaffold.of(context).showSnackBar(errorSnackBar);
@@ -305,6 +315,7 @@ class _MapScreenState extends State<MapScreen> {
                 onPressed: () {
                   setState(() {
                     if (!searchIsClicked) {
+                      ScaffoldMessenger.of(context).showSnackBar(helpSnackBar);
                       this.mapPillPos = MAP_PILL_VISIBLE_POSITION;
                       this.searchIsClicked = true;
                     } else {
