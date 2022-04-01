@@ -48,26 +48,41 @@ class _ParkingLotState extends State<ParkingLot> {
       stream: _createWidgetList(widget.numFloors),
       initialData: [],
       builder: (ctxt, snapshot) {
-        return Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.all(50.0),
-            child: (snapshot.hasData)
-                ? ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemBuilder: (BuildContext ctx, int index) {
-                      //fetches the image
-                      final element = snapshot.data[index];
-                      Widget zoomableElem = InteractiveViewer(
-                        boundaryMargin: const EdgeInsets.all(20.0),
-                        minScale: 0.1,
-                        maxScale: 5,
-                        child: Container(child: element),
-                      );
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          //shows a CircularProgressIndicator when the
+          //future data is still waiting to be fetched.
+          return Container(
+              alignment: Alignment.center,
+              margin: EdgeInsets.only(top: 20),
+              child: CircularProgressIndicator(
+                value: 0.8,
+              ));
+        } else
+          return Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(50.0),
+              child: (snapshot.hasData)
+                  ? ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemBuilder: (BuildContext ctx, int index) {
+                        //fetches the image
+                        final element = snapshot.data[index];
+                        Widget zoomableElem = InteractiveViewer(
+                          boundaryMargin: const EdgeInsets.all(20.0),
+                          minScale: 0.1,
+                          maxScale: 5,
+                          child: Container(child: element),
+                        );
 
-                      return zoomableElem;
-                    },
-                    itemCount: snapshot.data.length)
-                : CircularProgressIndicator());
+                        return zoomableElem;
+                      },
+                      itemCount: snapshot.data.length)
+                  : Container(
+                      alignment: Alignment.topCenter,
+                      margin: EdgeInsets.only(top: 20),
+                      child: CircularProgressIndicator(
+                        value: 0.8,
+                      )));
       },
     );
   }
@@ -77,12 +92,13 @@ class _ParkingLotState extends State<ParkingLot> {
     final response = await http.get(Uri.parse(
         widget._url + widget.parkingLotName + '/' + floor.toString()));
     if (response.statusCode == 200) {
-      // ignore: deprecated_member_use
+      // if the response returns a 404 Not Found
 
       Map<String, dynamic> values = json.decode(response.body);
 
       return values['image'];
     } else {
+      //
       return "Invalid link!";
     }
 
@@ -103,6 +119,11 @@ class _ParkingLotState extends State<ParkingLot> {
     //return a list of widgets:
   }
 
+  /**
+   * Populates image based on the encoded byte string which will be 
+   * decoded and added to the list of parking images.
+   * 
+   */
   Future<List> _populateImages(int numFloors) async {
     List<dynamic> parkingLotImages = [];
     for (var i = 1; i <= numFloors; i++) {
@@ -121,6 +142,7 @@ class _ParkingLotState extends State<ParkingLot> {
 
         parkingLotImages.add(tile);
       } else {
+        //add the error Container to the list of images.
         parkingLotImages.add(getErrorContainer());
       }
     }
@@ -128,11 +150,17 @@ class _ParkingLotState extends State<ParkingLot> {
     return parkingLotImages;
   }
 
+  /**
+   * This method returns a Container that shows the error icon and message
+   * to the user.
+   * @returns Container widget that creates an error message and icon
+   */
   Widget getErrorContainer() {
     return Container(
-      color: Colors.blueGrey,
+      color: Colors.blueGrey[900],
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(
