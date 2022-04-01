@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_in_flutter/main.dart';
 import 'package:google_maps_in_flutter/widgets/Pill.dart';
 import 'package:location/location.dart';
 
@@ -28,10 +29,18 @@ class MapScreen extends StatefulWidget {
 This class is responsible for configuring the state of the Map Screen Widget
 This is a private class
 */
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends State<MapScreen> with RouteAware {
   //initCameraPosition: sets the initial target and zoom
   //GoogleMapController: controller for a single GoogleMap instance which is
   //running on the host platform; can use methods such as animateCamera
+
+  //initialize a StreamController here to allow pausing and resuming of
+  //the subscribed stream:
+  late StreamController _streamController;
+  late Stream<Set<dynamic>> setStream;
+  // ignore: prefer_typing_uninitialized_variables
+  late var _setSubscription;
+
   static const _initialCameraPosition = CameraPosition(
     target: LatLng(53.5461, -113.4938),
     zoom: 11.5,
@@ -56,6 +65,7 @@ class _MapScreenState extends State<MapScreen> {
   late Timer timer;
   int counter = 0;
   late BitmapDescriptor icon;
+  final streamError = false;
 
   //main controller for google map
   Location currentLocation = Location();
@@ -74,11 +84,93 @@ class _MapScreenState extends State<MapScreen> {
   late List mapMarkers = [];
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPush() {
+    //call function whenever the map screen is visited
+    print('*** Entering ${this.toString()}');
+    //print(routeObserver);
+    super.didPush();
+  }
+
+  @override
+  void didPop() {
+    print('${this.toString()}: Called didPop');
+    super.didPop();
+  }
+
+  @override
+  void didPopNext() {
+    //resume stream controller here:
+    _setSubscription.resume();
+    print('${this.toString()}:Called didPopNext');
+    super.didPopNext();
+  }
+
+  @override
+  void didPushNext() {
+    print('${this.toString()}: Called didPushNext');
+    super.didPushNext();
+  }
+
+  /**
+   * initState: initialize state of the screen here:
+   */
+  @override
   void initState() {
+    //allow subscription of the current route here:
+    WidgetsBinding.instance!.addPostFrameCallback((timeStamp) {
+      routeObserver.subscribe(this, ModalRoute.of(context)!);
+    });
     super.initState();
     getIcon();
+    setStream = _createMarkerSet(context);
+    _streamController = StreamController.broadcast();
+    _setSubscription = setStream.listen((event) {
+      print('stream running...');
+      return _streamController.add(event);
+    });
     //fetchLocation();
-    _future = createMapMarkerList();
+    // _future = createMapMarkerList();
+    //check and verify if the mapMarkers are empty or not
+    // _checkMarkers();
+  }
+
+  // //helper methods that create widgets for alertDialog:
+  Widget getCloseButton() {
+    return TextButton(
+      child: Text('Close'),
+      onPressed: () {
+        Navigator.of(context).pop();
+      },
+    );
+  }
+  // }
+
+  Future<void> _checkMarkers() async {
+    if (mapMarkers.length == 0) {
+      Future.delayed(Duration.zero, () {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: Text("No Data!"),
+            content: Text("Cannot get data for available parking lots!"),
+            actions: [getCloseButton()],
+          ),
+        );
+      });
+    }
   }
 
   getIcon() async {
@@ -92,11 +184,15 @@ class _MapScreenState extends State<MapScreen> {
   Stream<Set<dynamic>> _createMarkerSet(BuildContext context) async* {
     bool _running = true;
     await Future<void>.delayed(const Duration(seconds: 1));
-    mapMarkers = await createMapMarkerList();
+    mapMarkers = await createMapMarkerListTest();
+    if (mapMarkers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(errorSnackBar);
+    }
     List<Marker> markerTemp = toMarker(mapMarkers, context);
     _markers = markerTemp.toSet();
     yield _markers;
     while (_running) {
+      print('Please run me');
       print(mapMarkers.toString());
       await Future<void>.delayed(const Duration(seconds: 30));
       mapMarkers = await createMapMarkerList();
@@ -137,6 +233,7 @@ class _MapScreenState extends State<MapScreen> {
   //in latitude and longitude
   List<Marker> toMarker(List<dynamic> mapMarkerList, BuildContext context) {
     List<Marker> markerList = [];
+    print("Length: " + mapMarkerList.length.toString());
     for (var i = 0; i < mapMarkerList.length; i++) {
       markerList.add(Marker(
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
@@ -216,7 +313,7 @@ class _MapScreenState extends State<MapScreen> {
                       color: Colors.white,
                       fontSize: 14))),
           onTap: () {
-            _googleMapController?.animateCamera(CameraUpdate.newCameraPosition(
+            _googleMapController.animateCamera(CameraUpdate.newCameraPosition(
                 CameraPosition(target: mapMarkerList[i].location, zoom: 15)));
           }));
       widgetList.add(SizedBox(height: 5));
@@ -250,11 +347,18 @@ class _MapScreenState extends State<MapScreen> {
       children: [
         Positioned.fill(
           child: StreamBuilder(
-              stream: _createMarkerSet(context),
+              stream: _streamController.stream,
               builder: (context, AsyncSnapshot snapshot) {
-                if (snapshot.hasError) {
-                  Scaffold.of(context).showSnackBar(errorSnackBar);
-                }
+                //print("snapshot: " + snapshot.data);
+
+                // if (snapshot.data == null) {
+                //   print("ok");
+                //   //Scaffold.of(context).showSnackBar(errorSnackBar);
+                // }
+
+                // if (snapshot.hasError) {
+                //   Scaffold.of(context).showSnackBar(errorSnackBar);
+                // }
                 if (!snapshot.hasData) {
                   return Center(child: CircularProgressIndicator());
                 }
@@ -302,6 +406,7 @@ class _MapScreenState extends State<MapScreen> {
             right: 8,
             bottom: this.pillPos,
             child: Pill(
+              setSubscription: _setSubscription,
               landmark: relativeLandmark,
               total: relativeTotal,
               available: relativeAvail,
