@@ -14,7 +14,9 @@ class LoadingScreen extends StatelessWidget {
     RouteCreator route = new RouteCreator(screen: MapScreen());
     //allow transition to the next page (MapScreen) with the delay of 3 seconds
     Future.delayed(Duration(seconds: this.duration), () {
-      Navigator.of(context).push(route.createRoute());
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => MapScreen()),
+      );
     });
     // TODO: implement build
     return Scaffold(
