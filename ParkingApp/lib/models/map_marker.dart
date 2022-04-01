@@ -66,11 +66,22 @@ double checkCoord(String toCheck) {
   return coord;
 }
 
+Future<List<dynamic>> createMapMarkerListTest() async {
+  tempList.add(MapMarker(
+      title: 'UndergroundB6',
+      location: LatLng(53.5225, -113.6242),
+      total: 10,
+      avail: 10,
+      floors: 1));
+
+  return tempList;
+}
+
 //create an iterative function that loads the json data here:
 Future<List<dynamic>> createMapMarkerList() async {
   Map<String, dynamic> jsonData;
   //fake URL:
-  // final response = await http.get(Uri.parse(fake_URL));
+  //final response = await http.get(Uri.parse(fake_URL));
 
   //fetch all available parking lots here:
   final response = await http.get(Uri.parse(URL));
