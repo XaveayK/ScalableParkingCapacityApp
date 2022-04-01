@@ -57,8 +57,14 @@ class _ParkingLotState extends State<ParkingLot> {
                     itemBuilder: (BuildContext ctx, int index) {
                       //fetches the image
                       final element = snapshot.data[index];
+                      Widget zoomableElem = InteractiveViewer(
+                        boundaryMargin: const EdgeInsets.all(20.0),
+                        minScale: 0.1,
+                        maxScale: 1.6,
+                        child: Container(child: element),
+                      );
 
-                      return element;
+                      return zoomableElem;
                     },
                     itemCount: snapshot.data.length)
                 : CircularProgressIndicator());
