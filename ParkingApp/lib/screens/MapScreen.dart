@@ -272,8 +272,13 @@ class _MapScreenState extends State<MapScreen> with RouteAware {
     return (await showDialog(
           context: context,
           builder: (context) => new AlertDialog(
+            backgroundColor: Colors.grey,
             title: new Text('Are you sure?'),
-            content: new Text('Do you want to exit the ParkingApp'),
+            content: new Text(
+              'Do you want to exit the ParkingApp',
+              style: TextStyle(
+                  fontFamily: 'UniSans', color: Colors.white, fontSize: 14),
+            ),
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
