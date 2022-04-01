@@ -60,7 +60,7 @@ class _ParkingLotState extends State<ParkingLot> {
                       Widget zoomableElem = InteractiveViewer(
                         boundaryMargin: const EdgeInsets.all(20.0),
                         minScale: 0.1,
-                        maxScale: 1.6,
+                        maxScale: 5,
                         child: Container(child: element),
                       );
 
@@ -70,77 +70,7 @@ class _ParkingLotState extends State<ParkingLot> {
                 : CircularProgressIndicator());
       },
     );
-    // builder: (context, AsyncSnapshot<Image> image) => image.hasData
-    //     ? SizedBox(height: 250.0, child: image.data)
-    //     : CircularProgressIndicator(),
-    // builder: (context, AsyncSnapshot<dynamic> image) {
-    //   if (!image.hasData) {
-    //     return CircularProgressIndicator();
-    //   } else {
-    //     return Container(width: 500, height: 500, child: image.data);
-    //   }
-    // });
   }
-
-  // @override
-  // Widget build(BuildContext context) {
-  //   print('got here');
-  //   return StreamBuilder<dynamic>(
-  //       stream: _get(),
-  //       // builder: (context, AsyncSnapshot<Image> image) => image.hasData
-  //       //     ? SizedBox(height: 250.0, child: image.data)
-  //       //     : CircularProgressIndicator(),
-  //       builder: (context, AsyncSnapshot<dynamic> image) {
-  //         if (!image.hasData) {
-  //           return CircularProgressIndicator();
-  //         } else {
-  //           return Container(width: 500, height: 500, child: image.data);
-  //         }
-  //       });
-  // }
-
-  /**
-  * Create Stream
-  */
-
-  // Stream<http.Response> _get() async* {
-  //   yield* Stream.periodic(Duration(seconds: 5), (_) {
-  //     return http.get(Uri.parse("http://numbersapi.com/random/"));
-  //   }).asyncMap((event) async => await event);
-  // }
-
-  // Stream<dynamic> _get() async* {
-  //   yield* Stream.periodic(Duration(seconds: 1), (_) {
-  //     /*
-  //     1. do a file-IO of message.txt
-  //     2. once the file is read, store to a var;
-  //     3. decode to utf-8
-  //     4. decode to base64
-  //     5. convert bytes to an image
-
-  //     */
-  //     return load();
-  //   }).asyncMap((event) async => await event);
-  // }
-  /*
-  Future load() async {
-    List<Widget> data = [];
-    final String encodedStr = await _read();
-    if (encodedStr == 'Invalid link!') {
-      return Text('Cannot get data!',
-          style: TextStyle(
-              fontFamily: 'UniSans', color: Colors.white, fontSize: 14));
-    }
-
-    var b64Bytes = base64.decode(encodedStr);
-    data.add(Image.memory(
-      b64Bytes,
-      width: 1000,
-      height: 1000,
-      gaplessPlayback: true,
-    ));
-  }
-  */
 
   Future<String> _read(int floor) async {
     String str = "";
@@ -191,12 +121,31 @@ class _ParkingLotState extends State<ParkingLot> {
 
         parkingLotImages.add(tile);
       } else {
-        parkingLotImages.add(Text('Cannot get data!',
-            style: TextStyle(
-                fontFamily: 'UniSans', color: Colors.white, fontSize: 14)));
+        parkingLotImages.add(getErrorContainer());
       }
     }
 
     return parkingLotImages;
+  }
+
+  Widget getErrorContainer() {
+    return Container(
+      color: Colors.blueGrey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            Icons.error,
+            color: Colors.red,
+            size: 40.0,
+          ),
+          SizedBox(height: 20.0),
+          Text('Cannot get data!',
+              style: TextStyle(
+                  fontFamily: 'UniSans', color: Colors.white, fontSize: 14)),
+        ],
+      ),
+    );
   }
 }
