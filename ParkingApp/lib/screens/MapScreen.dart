@@ -184,7 +184,10 @@ class _MapScreenState extends State<MapScreen> with RouteAware {
   Stream<Set<dynamic>> _createMarkerSet(BuildContext context) async* {
     bool _running = true;
     await Future<void>.delayed(const Duration(seconds: 1));
-    mapMarkers = await createMapMarkerListTest();
+    //NOTE: only uncomment this line when the API is shut down
+    //mapMarkers = await createMapMarkerListTest();
+    mapMarkers = await createMapMarkerList();
+
     if (mapMarkers.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(errorSnackBar);
     }
@@ -192,8 +195,8 @@ class _MapScreenState extends State<MapScreen> with RouteAware {
     _markers = markerTemp.toSet();
     yield _markers;
     while (_running) {
-      print('Please run me');
-      print(mapMarkers.toString());
+      // print('Please run me');
+      // print(mapMarkers.toString());
       await Future<void>.delayed(const Duration(seconds: 30));
       mapMarkers = await createMapMarkerList();
       List<Marker> markerTemp = toMarker(mapMarkers, context);
@@ -233,7 +236,7 @@ class _MapScreenState extends State<MapScreen> with RouteAware {
   //in latitude and longitude
   List<Marker> toMarker(List<dynamic> mapMarkerList, BuildContext context) {
     List<Marker> markerList = [];
-    print("Length: " + mapMarkerList.length.toString());
+    // print("Length: " + mapMarkerList.length.toString());
     for (var i = 0; i < mapMarkerList.length; i++) {
       markerList.add(Marker(
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
@@ -269,8 +272,13 @@ class _MapScreenState extends State<MapScreen> with RouteAware {
     return (await showDialog(
           context: context,
           builder: (context) => new AlertDialog(
+            backgroundColor: Colors.grey,
             title: new Text('Are you sure?'),
-            content: new Text('Do you want to exit the ParkingApp'),
+            content: new Text(
+              'Do you want to exit the ParkingApp',
+              style: TextStyle(
+                  fontFamily: 'UniSans', color: Colors.white, fontSize: 14),
+            ),
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
