@@ -51,6 +51,7 @@ class _ParkingLotState extends State<ParkingLot> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           //shows a CircularProgressIndicator when the
           //future data is still waiting to be fetched.
+          print("waiting...");
           return Container(
               alignment: Alignment.center,
               margin: EdgeInsets.only(top: 20),
@@ -111,7 +112,7 @@ class _ParkingLotState extends State<ParkingLot> {
     parkingLotImages = await _populateImages(numFloors);
     yield parkingLotImages;
     while (_running) {
-      await Future<void>.delayed(const Duration(seconds: 30));
+      await Future<void>.delayed(const Duration(seconds: 60));
       parkingLotImages = await _populateImages(numFloors);
       yield parkingLotImages;
     }
